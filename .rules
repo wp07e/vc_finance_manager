@@ -1,4 +1,4 @@
-You are an expert in Solidity, TypeScript, Node.js, Next.js 14.2.1 App Router, React, Vite, Viem v2, Wagmi v2, Shadcn UI, Radix UI, Tailwind Aria, firebase.
+You are an expert in UI/UX design, Solidity, TypeScript, Node.js, Next.js 14.2.1 App Router, React, Vite, Viem v2, Wagmi v2, Shadcn UI, Radix UI, Tailwind Aria, firebase.
 
 Key Principles:
 
@@ -9,6 +9,7 @@ Key Principles:
 - Use lowercase with dashes for directories (e.g., components/auth-wizard).
 - Favor named exports for components.
 - Use the Receive an Object, Return an Object (RORO) pattern.
+- Ensure package.json is updated with all neccessary dependencies.
 
 JavaScript/TypeScript:
 
@@ -29,7 +30,7 @@ JavaScript/TypeScript:
 
 Dependencies:
 
-- Next.js 14 App Router
+- Next.js 14.2.1 App Router
 - Wagmi v2
 - Viem v2
 
@@ -39,11 +40,12 @@ React/Next.js:
 - Use declarative JSX.
 - Use function, not const, for components.
 - Use Shadcn UI, Radix, and Tailwind Aria for components and styling.
+- Use sonner Toasts.
 - Implement responsive design with Tailwind CSS.
-- Use mobile-first approach for responsive design.
+- Use mobile-first approach for responsive design but ensure it looks good on desktop also.
 - Place static content and interfaces at file end.
 - Use content variables for static content outside render functions.
-- Minimize 'use client', 'useEffect', and 'setState'. Favor RSC.
+- Minimize 'use client', 'useEffect', and 'setState'. Favor React Server Components.
 - Use Zod for form validation.
 - Wrap client components in Suspense with fallback.
 - Use dynamic loading for non-critical components.
@@ -52,6 +54,9 @@ React/Next.js:
 - Use error boundaries for unexpected errors: Implement error boundaries using error.tsx and global-error.tsx files to handle unexpected errors and provide a fallback UI.
 - Use useActionState with react-hook-form for form validation.
 - Code in services/ dir always throw user-friendly errors that tanStackQuery can catch and show to the user.
+- Use "<html lang="en" suppressHydrationWarning>" to prevent hydration errors.
+- Use "React.forwardRef" to forward refs to child components.
+
 - Use next-safe-action for all server actions:
   - Implement type-safe server actions with proper validation.
   - Utilize the `action` function from next-safe-action for creating actions.
@@ -80,84 +85,24 @@ React/Next.js:
         }
       })
     ```
-- Use the context API along with listners for state changes.
-Example:
-    ```typescript
-    // contexts/AuthContext.js
-    "use client"
 
-    import { createContext, useContext, useEffect, useState } from "react";
-    import { initializeApp } from "firebase/app";
-    import {
-    getAuth,
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    signOut,
-    sendEmailVerification,
-    sendPasswordResetEmail,
-    onAuthStateChanged,
-    type User,
-    } from "firebase/auth";
-    import { firebaseConfig } from "@/config/firebase";
+Design Principles:
 
-    const AuthContext = createContext();
-
-    export function AuthProvider({ children }) {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-        setUser(user);
-        setLoading(false);
-        });
-        return () => unsubscribe();
-    }, []);
-
-        return (
-            <AuthContext.Provider value={{ user, loading }}>
-            {children}
-            </AuthContext.Provider>
-        );
-    }
-
-    export const useAuth = () => useContext(AuthContext);
-    ```
-    ```typescript
-    // app/layout.js
-    import { AuthProvider } from '@/contexts/AuthContext';
-
-    export default function RootLayout({ children }) {
-        return (
-            <AuthProvider>
-            {children}
-            </AuthProvider>
-        );
-    }
-    ```
-    ```typescript
-    // app/dashboard/page.js
-    'use client';
-
-    import { useAuth } from '@/contexts/AuthContext';
-    import { redirect } from 'next/navigation';
-
-    export default function Dashboard() {
-        const { user, loading } = useAuth();
-
-        if (loading) return <div>Loading...</div>;
-        if (!user) redirect('/login');
-
-        return (
-            <div>
-            <h1>Dashboard</h1>
-            <p>Welcome, {user.email}</p>
-            </div>
-        );
-    }
-    ```
+- Develop unique branding colors. Gradient color usage for the background is encouraged to create a visually appealing and cohesive design.
+- Navbar should contain a logo, navigation links, and a search bar.
+- Landing page should be eye and you should consider adding these elements / sections if appropriate for the application:
+    - Hero Image
+    - Discount bar to offer discounts monthly vs yearly plan.
+    - Pricing cards
+    - Social proofs
+    - Feature Comparision
+    - Customer Testimonials (should include customer names and images)
+    - Customer Reviews (should include customer names and images)
+    - FAQ
+    - CTA
+    - Footer (should contain relevant links example terms of service, privacy policy, contact us, pricing, About Us, etc.)
+    - Summary Of Benefits
+- Implement 404 page and routing
 
 Key Conventions:
 

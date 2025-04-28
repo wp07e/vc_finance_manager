@@ -1,11 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -16,21 +13,25 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { loginWithEmailAndPassword } from "@/lib/auth";
+import Link from "next/link";
 
 const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(1, "Password is required"),
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-type LoginForm = z.infer<typeof loginSchema>;
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<LoginForm>({
+  const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
@@ -38,29 +39,26 @@ export default function LoginPage() {
     },
   });
 
-  async function onSubmit(data: LoginForm) {
+  async function onSubmit(data: LoginFormValues) {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      await loginWithEmailAndPassword(data.email, data.password);
+      const auth = getAuth();
+      await signInWithEmailAndPassword(auth, data.email, data.password);
       router.push("/dashboard");
-    } catch (error) {
-      toast("Error", {
-        description: "Invalid email or password",
-      });
+    } catch (error: any) {
+      toast.error("Failed to login. Please check your credentials.");
     } finally {
       setIsLoading(false);
     }
   }
 
   return (
-    <div className="container flex h-screen w-screen flex-col items-center justify-center">
-      <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-        <div className="flex flex-col space-y-2 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Welcome back
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Enter your email to sign in to your account
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <Card className="w-full max-w-lg p-6 space-y-6">
+        <div className="space-y-2 text-center">
+          <h1 className="text-2xl font-bold">Welcome back</h1>
+          <p className="text-muted-foreground">
+            Sign in to your account to continue
           </p>
         </div>
 
@@ -75,7 +73,7 @@ export default function LoginPage() {
                   <FormControl>
                     <Input
                       type="email"
-                      placeholder="name@example.com"
+                      placeholder="Enter your email"
                       {...field}
                     />
                   </FormControl>
@@ -83,6 +81,7 @@ export default function LoginPage() {
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="password"
@@ -90,37 +89,38 @@ export default function LoginPage() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" {...field} />
+                    <Input
+                      type="password"
+                      placeholder="Enter your password"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
         </Form>
 
-        <p className="px-8 text-center text-sm text-muted-foreground">
+        <div className="text-center space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Don&apos;t have an account?{" "}
+            <Link href="/register" className="text-primary hover:underline">
+              Sign up
+            </Link>
+          </p>
           <Link
-            href="/auth/forgot-password"
-            className="underline underline-offset-4 hover:text-primary"
+            href="/forgot-password"
+            className="text-sm text-primary hover:underline"
           >
-            Forgot password?
+            Forgot your password?
           </Link>
-        </p>
-
-        <p className="px-8 text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <Link
-            href="/auth/register"
-            className="underline underline-offset-4 hover:text-primary"
-          >
-            Sign up
-          </Link>
-        </p>
-      </div>
+        </div>
+      </Card>
     </div>
   );
 }
