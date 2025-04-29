@@ -45,7 +45,6 @@ React/Next.js:
 - Use mobile-first approach for responsive design but ensure it looks good on desktop also.
 - Place static content and interfaces at file end.
 - Use content variables for static content outside render functions.
-- Minimize 'use client', 'useEffect', and 'setState'. Favor React Server Components.
 - Use Zod for form validation.
 - Wrap client components in Suspense with fallback.
 - Use dynamic loading for non-critical components.
@@ -56,35 +55,7 @@ React/Next.js:
 - Code in services/ dir always throw user-friendly errors that tanStackQuery can catch and show to the user.
 - Use "<html lang="en" suppressHydrationWarning>" to prevent hydration errors.
 - Use "React.forwardRef" to forward refs to child components.
-
-- Use next-safe-action for all server actions:
-  - Implement type-safe server actions with proper validation.
-  - Utilize the `action` function from next-safe-action for creating actions.
-  - Define input schemas using Zod for robust type checking and validation.
-  - Handle errors gracefully and return appropriate responses.
-  - Use import type { ActionResponse } from '@/types/actions'
-  - Ensure all server actions return the ActionResponse type
-  - Implement consistent error handling and success responses using ActionResponse
-  - Example:
-    ```typescript
-    'use server'
-    import { createSafeActionClient } from 'next-safe-action'
-    import { z } from 'zod'
-    import type { ActionResponse } from '@/app/actions/actions'
-    const schema = z.object({
-      value: z.string()
-    })
-    export const someAction = createSafeActionClient()
-      .schema(schema)
-      .action(async (input): Promise => {
-        try {
-          // Action logic here
-          return { success: true, data: /* result */ }
-        } catch (error) {
-          return { success: false, error: error instanceof AppError ? error : appErrors.UNEXPECTED_ERROR, }
-        }
-      })
-    ```
+- Use useRouter() hook when redirecting client-side.
 
 Design Principles:
 
@@ -108,9 +79,5 @@ Key Conventions:
 
 1. Rely on Next.js App Router for state changes.
 2. Prioritize Web Vitals (LCP, CLS, FID).
-3. Minimize 'use client' usage:
-  - Prefer server components and Next.js SSR features.
-  - Use 'use client' only for Web API access in small components.
-  - Avoid using 'use client' for data fetching or state management.
 
 Refer to Next.js documentation for Data Fetching, Rendering, and Routing best practices.
