@@ -1,24 +1,28 @@
-"use client";
+'use client'
 
-import { useAuth } from "@/lib/auth/auth-provider";
-import { Card } from "@/components/ui/card";
-import { RecentExpenses } from "@/components/dashboard/recent-expenses";
-import { BudgetOverview } from "@/components/dashboard/budget-overview";
-import { ExpenseSummary } from "@/components/dashboard/expense-summary";
-import { AddExpenseDialog } from "@/components/expenses/add-expense-dialog";
-import { Suspense } from "react";
-import { redirect } from "next/navigation";
+import { useAuth } from '@/lib/auth/auth-provider'
+import { Card } from '@/components/ui/card'
+import { RecentExpenses } from '@/components/dashboard/recent-expenses'
+import { BudgetOverview } from '@/components/dashboard/budget-overview'
+import { ExpenseSummary } from '@/components/dashboard/expense-summary'
+import { SpendingTrends } from '@/components/dashboard/spending-trends'
+import { CategoryBreakdown } from '@/components/dashboard/category-breakdown'
+import { AddExpenseDialog } from '@/components/expenses/add-expense-dialog'
+import { AddBudgetDialog } from '@/components/budgets/add-budget-dialog'
+import { Suspense } from 'react'
+import { redirect } from 'next/navigation'
+import { Separator } from '@/components/ui/separator'
 
 function LoadingCard() {
   return (
     <Card className="p-6">
       <div className="h-20 animate-pulse rounded-md bg-muted" />
     </Card>
-  );
+  )
 }
 
 export default function DashboardPage() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading } = useAuth()
 
   if (isLoading) {
     return (
@@ -27,18 +31,21 @@ export default function DashboardPage() {
         <LoadingCard />
         <LoadingCard />
       </div>
-    );
+    )
   }
 
   if (!user) {
-    redirect("/login");
+    redirect('/login')
   }
 
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Dashboard</h1>
-        <AddExpenseDialog />
+        <div className="flex gap-4">
+          <AddBudgetDialog />
+          <AddExpenseDialog />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -60,6 +67,18 @@ export default function DashboardPage() {
           </Card>
         </Suspense>
       </div>
+
+      <Separator />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Suspense fallback={<LoadingCard />}>
+          <SpendingTrends />
+        </Suspense>
+
+        <Suspense fallback={<LoadingCard />}>
+          <CategoryBreakdown />
+        </Suspense>
+      </div>
     </div>
-  );
+  )
 }
