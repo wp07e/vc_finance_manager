@@ -1,10 +1,24 @@
-'use client'
+"use client";
 
-import { z } from 'zod'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Form,
   FormControl,
@@ -13,315 +27,209 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
+} from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
-import { Input } from '@/components/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useTheme } from 'next-themes'
-import { toast } from 'sonner'
-import { getAuth, updateProfile, updateEmail } from 'firebase/auth'
-import { useState } from 'react'
-import { DataExport } from '@/components/data-export/data-export'
-
-const currencies = [
-  { value: 'USD', label: 'US Dollar ($)' },
-  { value: 'EUR', label: 'Euro (€)' },
-  { value: 'GBP', label: 'British Pound (£)' },
-  // Add more currencies as needed
-]
-
-const profileFormSchema = z.object({
-  displayName: z.string().min(2, 'Display name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email address'),
-})
-
-const preferencesFormSchema = z.object({
-  currency: z.string().min(1, 'Please select a currency'),
-  theme: z.enum(['light', 'dark', 'system']),
-  notifications: z.object({
-    email: z.boolean(),
-    push: z.boolean(),
-    budgetAlerts: z.boolean(),
-    weeklyReport: z.boolean(),
-  }),
-})
-
-type ProfileFormValues = z.infer<typeof profileFormSchema>
-type PreferencesFormValues = z.infer<typeof preferencesFormSchema>
+  UserSettingsInput,
+  userSettingsSchema,
+} from "@/lib/validations/schema";
+import { updateUserSettings, getUserSettings } from "@/services/user";
+import { toast } from "sonner";
+import { Separator } from "@/components/ui/separator";
 
 export default function SettingsPage() {
-  const { theme, setTheme } = useTheme()
-  const [isLoading, setIsLoading] = useState(false)
-  const auth = getAuth()
-  const user = auth.currentUser
+  const queryClient = useQueryClient();
+  const { data: settings, isLoading: isLoadingSettings } = useQuery({
+    queryKey: ["user-settings"],
+    queryFn: getUserSettings,
+  });
 
-  const profileForm = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema),
+  const form = useForm<UserSettingsInput>({
+    resolver: zodResolver(userSettingsSchema),
     defaultValues: {
-      displayName: user?.displayName || '',
-      email: user?.email || '',
-    },
-  })
-
-  const preferencesForm = useForm<PreferencesFormValues>({
-    resolver: zodResolver(preferencesFormSchema),
-    defaultValues: {
-      currency: 'USD',
-      theme: (theme as 'light' | 'dark' | 'system') || 'system',
+      theme: settings?.theme || "system",
+      currency: settings?.currency || "USD",
       notifications: {
-        email: true,
-        push: true,
-        budgetAlerts: true,
-        weeklyReport: true,
+        email: settings?.notifications.email || false,
+        push: settings?.notifications.push || false,
       },
     },
-  })
+  });
 
-  async function onProfileSubmit(data: ProfileFormValues) {
-    if (!user) return
+  const { mutate: updateSettings, isPending } = useMutation({
+    mutationFn: updateUserSettings,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-settings"] });
+      toast.success("Settings updated successfully");
+    },
+    onError: () => {
+      toast.error("Failed to update settings");
+    },
+  });
 
-    setIsLoading(true)
-    try {
-      // Update display name
-      if (data.displayName !== user.displayName) {
-        await updateProfile(user, {
-          displayName: data.displayName,
-        })
-      }
-
-      // Update email
-      if (data.email !== user.email) {
-        await updateEmail(user, data.email)
-      }
-
-      toast.success('Profile updated successfully')
-    } catch (error: any) {
-      toast.error('Failed to update profile: ' + error.message)
-    } finally {
-      setIsLoading(false)
-    }
+  function onSubmit(data: UserSettingsInput) {
+    updateSettings(data);
   }
 
-  async function onPreferencesSubmit(data: PreferencesFormValues) {
-    setIsLoading(true)
-    try {
-      // Update theme
-      setTheme(data.theme)
-
-      // Save other preferences to user's document in Firestore
-      // This would be implemented in a separate service
-
-      toast.success('Preferences updated successfully')
-    } catch (error: any) {
-      toast.error('Failed to update preferences: ' + error.message)
-    } finally {
-      setIsLoading(false)
-    }
+  if (isLoadingSettings) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Settings</CardTitle>
+          <CardDescription>Manage your account preferences</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="h-8 w-1/3 animate-pulse rounded-md bg-muted" />
+            <div className="h-8 w-1/2 animate-pulse rounded-md bg-muted" />
+            <div className="h-8 w-1/4 animate-pulse rounded-md bg-muted" />
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
-    <div className="container max-w-4xl py-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="space-y-6">
+      <div>
         <h1 className="text-3xl font-bold">Settings</h1>
-        <DataExport />
+        <p className="text-muted-foreground">
+          Manage your account preferences and settings
+        </p>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-8">
-        <TabsList>
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="preferences">Preferences</TabsTrigger>
-        </TabsList>
+      <Separator />
 
-        <TabsContent value="profile">
-          <Card className="p-6">
-            <Form {...profileForm}>
-              <form
-                onSubmit={profileForm.handleSubmit(onProfileSubmit)}
-                className="space-y-6"
-              >
-                <FormField
-                  control={profileForm.control}
-                  name="displayName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Display Name</FormLabel>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Appearance</CardTitle>
+              <CardDescription>
+                Customize how the app looks and feels
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="theme"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Theme</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
-                        <Input {...field} />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a theme" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                      <SelectContent>
+                        <SelectItem value="light">Light</SelectItem>
+                        <SelectItem value="dark">Dark</SelectItem>
+                        <SelectItem value="system">System</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Select your preferred theme
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                <FormField
-                  control={profileForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
+              <FormField
+                control={form.control}
+                name="currency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Currency</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
-                        <Input type="email" {...field} />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a currency" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </form>
-            </Form>
+                      <SelectContent>
+                        <SelectItem value="USD">USD ($)</SelectItem>
+                        <SelectItem value="EUR">EUR (€)</SelectItem>
+                        <SelectItem value="GBP">GBP (£)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Select your preferred currency
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="preferences">
-          <Card className="p-6">
-            <Form {...preferencesForm}>
-              <form
-                onSubmit={preferencesForm.handleSubmit(onPreferencesSubmit)}
-                className="space-y-6"
-              >
-                <FormField
-                  control={preferencesForm.control}
-                  name="currency"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Currency</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a currency" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {currencies.map((currency) => (
-                            <SelectItem
-                              key={currency.value}
-                              value={currency.value}
-                            >
-                              {currency.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+          <Card>
+            <CardHeader>
+              <CardTitle>Notifications</CardTitle>
+              <CardDescription>
+                Configure how you want to receive notifications
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="notifications.email"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel>Email Notifications</FormLabel>
+                      <FormDescription>
+                        Receive updates about your expenses and budgets via
+                        email
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
 
-                <FormField
-                  control={preferencesForm.control}
-                  name="theme"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Theme</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a theme" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="light">Light</SelectItem>
-                          <SelectItem value="dark">Dark</SelectItem>
-                          <SelectItem value="system">System</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Notifications</h3>
-                  <div className="space-y-4">
-                    <FormField
-                      control={preferencesForm.control}
-                      name="notifications.email"
-                      render={({ field }) => (
-                        <FormItem className="flex items-center justify-between">
-                          <div>
-                            <FormLabel>Email Notifications</FormLabel>
-                            <FormDescription>
-                              Receive notifications via email
-                            </FormDescription>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={preferencesForm.control}
-                      name="notifications.budgetAlerts"
-                      render={({ field }) => (
-                        <FormItem className="flex items-center justify-between">
-                          <div>
-                            <FormLabel>Budget Alerts</FormLabel>
-                            <FormDescription>
-                              Get notified when approaching budget limits
-                            </FormDescription>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={preferencesForm.control}
-                      name="notifications.weeklyReport"
-                      render={({ field }) => (
-                        <FormItem className="flex items-center justify-between">
-                          <div>
-                            <FormLabel>Weekly Report</FormLabel>
-                            <FormDescription>
-                              Receive weekly spending reports
-                            </FormDescription>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? 'Saving...' : 'Save Preferences'}
-                </Button>
-              </form>
-            </Form>
+              <FormField
+                control={form.control}
+                name="notifications.push"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel>Push Notifications</FormLabel>
+                      <FormDescription>
+                        Get instant alerts when you reach budget limits
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+
+          <div className="flex justify-end">
+            <Button type="submit" disabled={isPending}>
+              {isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </form>
+      </Form>
     </div>
-  )
+  );
 }

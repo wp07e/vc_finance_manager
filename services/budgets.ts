@@ -7,6 +7,7 @@ import {
   getDocs,
   Timestamp,
   addDoc,
+  FirestoreError,
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
@@ -19,10 +20,64 @@ interface CreateBudgetInput {
   startDate: Date;
 }
 
+class BudgetServiceError extends Error {
+  constructor(
+    message: string,
+    public code: string,
+    public originalError?: unknown,
+  ) {
+    super(message);
+    this.name = "BudgetServiceError";
+  }
+}
+
+function handleFirebaseError(error: unknown): never {
+  if (error instanceof FirestoreError) {
+    switch (error.code) {
+      case "permission-denied":
+        throw new BudgetServiceError(
+          "You don't have permission to perform this action",
+          "PERMISSION_DENIED",
+          error,
+        );
+      case "not-found":
+        throw new BudgetServiceError(
+          "The requested budget was not found",
+          "NOT_FOUND",
+          error,
+        );
+      case "resource-exhausted":
+        throw new BudgetServiceError(
+          "You've reached your budget limit",
+          "QUOTA_EXCEEDED",
+          error,
+        );
+      default:
+        throw new BudgetServiceError(
+          "An error occurred while managing your budget",
+          "UNKNOWN_ERROR",
+          error,
+        );
+    }
+  }
+
+  throw new BudgetServiceError(
+    "An unexpected error occurred",
+    "UNKNOWN_ERROR",
+    error,
+  );
+}
+
 export async function getBudgets(): Promise<Budget[]> {
   const auth = getAuth();
   const user = auth.currentUser;
-  if (!user) throw new Error("User must be logged in to fetch budgets");
+
+  if (!user) {
+    throw new BudgetServiceError(
+      "You must be logged in to fetch budgets",
+      "UNAUTHENTICATED",
+    );
+  }
 
   try {
     const budgetsRef = collection(db, "budgets");
@@ -41,8 +96,7 @@ export async function getBudgets(): Promise<Budget[]> {
       };
     });
   } catch (error) {
-    console.error("Error fetching budgets:", error);
-    throw new Error("Failed to fetch budgets");
+    handleFirebaseError(error);
   }
 }
 
@@ -51,12 +105,30 @@ export async function createBudget({
   amount,
   period,
   startDate,
-}: CreateBudgetInput) {
+}: CreateBudgetInput): Promise<Budget> {
   const auth = getAuth();
   const user = auth.currentUser;
-  if (!user) throw new Error("User must be logged in to create a budget");
+
+  if (!user) {
+    throw new BudgetServiceError(
+      "You must be logged in to create a budget",
+      "UNAUTHENTICATED",
+    );
+  }
 
   try {
+    // Validate input
+    if (amount <= 0) {
+      throw new BudgetServiceError(
+        "Budget amount must be greater than 0",
+        "INVALID_AMOUNT",
+      );
+    }
+
+    if (!category.trim()) {
+      throw new BudgetServiceError("Category is required", "INVALID_CATEGORY");
+    }
+
     const budgetRef = await addDoc(collection(db, "budgets"), {
       userId: user.uid,
       category,
@@ -75,15 +147,20 @@ export async function createBudget({
       startDate,
     };
   } catch (error) {
-    console.error("Error creating budget:", error);
-    throw new Error("Failed to create budget");
+    handleFirebaseError(error);
   }
 }
 
 export async function getCurrentMonthBudgets(): Promise<Budget[]> {
   const auth = getAuth();
   const user = auth.currentUser;
-  if (!user) throw new Error("User must be logged in to fetch budgets");
+
+  if (!user) {
+    throw new BudgetServiceError(
+      "You must be logged in to fetch budgets",
+      "UNAUTHENTICATED",
+    );
+  }
 
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
@@ -110,7 +187,6 @@ export async function getCurrentMonthBudgets(): Promise<Budget[]> {
       };
     });
   } catch (error) {
-    console.error("Error fetching budgets:", error);
-    throw new Error("Failed to fetch budgets");
+    handleFirebaseError(error);
   }
 }
