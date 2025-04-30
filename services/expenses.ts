@@ -80,3 +80,39 @@ export async function getExpenses(): Promise<Expense[]> {
     throw new Error('Failed to fetch expenses')
   }
 }
+
+export async function getCurrentExpenses(): Promise<Expense[]> {
+  const auth = getAuth()
+  const user = auth.currentUser
+
+  if (!user) throw new Error('User must be logged in to fetch expenses')
+
+  const startOfMonth = new Date()
+  startOfMonth.setDate(1)
+  startOfMonth.setHours(0, 0, 0, 0)
+
+  try {
+    const q = query(
+      collection(db, 'expenses'),
+      where('userId', '==', user.uid),
+      where('date', '>=', Timestamp.fromDate(startOfMonth))
+    )
+    const querySnapshot = await getDocs(q)
+    
+    return querySnapshot.docs.map((doc) => {
+      const data = doc.data()
+      return {
+        id: doc.id,
+        userId: data.userId,
+        amount: data.amount,
+        category: data.category,
+        description: data.description,
+        date: data.date.toDate(),
+        tags: data.tags || [],
+      }
+    })
+  } catch (error) {
+    console.error('Error fetching current month expenses:', error)
+    throw new Error('Failed to fetch current month expenses')
+  }
+}

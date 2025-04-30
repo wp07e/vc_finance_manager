@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'
+import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -36,6 +36,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>
 export default function RegisterPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [verificationSent, setVerificationSent] = useState(false)
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -50,13 +51,39 @@ export default function RegisterPage() {
     setIsLoading(true)
     try {
       const auth = getAuth()
-      await createUserWithEmailAndPassword(auth, data.email, data.password)
-      router.push('/dashboard')
+      const { user } = await createUserWithEmailAndPassword(
+        auth,
+        data.email,
+        data.password
+      )
+
+      await sendEmailVerification(user)
+      setVerificationSent(true)
+      toast.success('Verification email sent')
     } catch (error: any) {
-      toast.error('Failed to create account. Please try again.')
+      toast.error('Failed to create account: ' + error.message)
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (verificationSent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-lg p-6 space-y-6">
+          <div className="space-y-2 text-center">
+            <h1 className="text-2xl font-bold">Check Your Email</h1>
+            <p className="text-muted-foreground">
+              We've sent you a verification link. Please check your email and
+              verify your account to continue.
+            </p>
+          </div>
+          <Button asChild className="w-full">
+            <Link href="/login">Return to Login</Link>
+          </Button>
+        </Card>
+      </div>
+    )
   }
 
   return (
