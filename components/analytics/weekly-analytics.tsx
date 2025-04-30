@@ -5,10 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useQuery } from '@tanstack/react-query'
 import { getExpenses } from '@/services/expenses'
-import { startOfMonth, subMonths, format } from 'date-fns'
-import { AreaChart } from '@tremor/react'
+import { startOfWeek, endOfWeek, eachDayOfInterval, format } from 'date-fns'
+import { BarChart } from '@tremor/react'
 
-export function SpendingTrends() {
+export function WeeklyAnalytics() {
   const { data: expenses, isLoading, error } = useQuery({
     queryKey: ['expenses'],
     queryFn: getExpenses,
@@ -17,28 +17,22 @@ export function SpendingTrends() {
   const chartData = useMemo(() => {
     if (!expenses) return []
 
-    const months = Array.from({ length: 6 }, (_, i) => {
-      const date = subMonths(new Date(), i)
-      return {
-        date: startOfMonth(date),
-        monthLabel: format(date, 'MMM yyyy'),
-      }
-    }).reverse()
+    const now = new Date()
+    const weekStart = startOfWeek(now)
+    const weekEnd = endOfWeek(now)
+    const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd })
 
-    return months.map(({ date, monthLabel }) => {
-      const monthlyExpenses = expenses.filter(
+    return daysInWeek.map((date) => {
+      const dayExpenses = expenses.filter(
         (expense) =>
-          startOfMonth(expense.date).getTime() === date.getTime()
+          format(expense.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
       )
 
-      const total = monthlyExpenses.reduce(
-        (sum, expense) => sum + expense.amount,
-        0
-      )
+      const total = dayExpenses.reduce((sum, expense) => sum + expense.amount, 0)
 
       return {
-        month: monthLabel,
-        'Total Spending': total,
+        day: format(date, 'EEE'),
+        'Daily Spending': total,
       }
     })
   }, [expenses])
@@ -47,7 +41,7 @@ export function SpendingTrends() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Monthly Spending Trends</CardTitle>
+          <CardTitle>Weekly Spending Pattern</CardTitle>
         </CardHeader>
         <CardContent>
           <Skeleton className="h-[300px] w-full" />
@@ -64,7 +58,22 @@ export function SpendingTrends() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Failed to load spending trends
+            Failed to load weekly analytics
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (chartData.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Weekly Spending Pattern</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground text-center py-10">
+            No expenses found for this week
           </p>
         </CardContent>
       </Card>
@@ -74,19 +83,19 @@ export function SpendingTrends() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Monthly Spending Trends</CardTitle>
+        <CardTitle>Weekly Spending Pattern</CardTitle>
       </CardHeader>
       <CardContent>
-        <AreaChart
+        <BarChart
           className="mt-4 h-[300px]"
           data={chartData}
-          index="month"
-          categories={['Total Spending']}
+          index="day"
+          categories={['Daily Spending']}
           colors={['blue']}
           valueFormatter={(value) => `$${value.toLocaleString()}`}
+          showAnimation={true}
           showLegend={false}
           showGridLines={false}
-          curveType="monotone"
         />
       </CardContent>
     </Card>
