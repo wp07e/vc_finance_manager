@@ -29,19 +29,6 @@ import { MoreHorizontal } from 'lucide-react'
 import { EditCategoryDialog } from './edit-category-dialog'
 import type { Category } from '@/types'
 
-const defaultCategories: Category[] = [
-  { id: 'default-1', name: 'Food', color: '#FF6347', icon: '🍕' },
-  { id: 'default-2', name: 'Transportation', color: '#4682B4', icon: '🚗' },
-  { id: 'default-3', name: 'Shopping', color: '#32CD32', icon: '🛍️' },
-  { id: 'default-4', name: 'Entertainment', color: '#FFD700', icon: '🎮' },
-  { id: 'default-5', name: 'Health', color: '#BA55D3', icon: '🏥' },
-  { id: 'default-6', name: 'Housing', color: '#F08080', icon: '🏠' },
-  { id: 'default-7', name: 'Utilities', color: '#ADD8E6', icon: '💡' },
-  { id: 'default-8', name: 'Travel', color: '#20B2AA', icon: '✈️' },
-  { id: 'default-9', name: 'Education', color: '#778899', icon: '📚' },
-  { id: 'default-10', name: 'Miscellaneous', color: '#C0C0C0', icon: '📝' },
-];
-
 const categoryFormSchema = z.object({
   name: z.string().min(2, 'Category name must be at least 2 characters'),
   color: z.string().regex(/^#[0-9A-F]{6}$/i, 'Must be a valid hex color'),
@@ -60,12 +47,10 @@ export function CategoryManagement() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
 
-  const { data: fetchedCategories, isLoading } = useQuery<Category[]>({
+  const { data: categories, isLoading } = useQuery<Category[]>({
     queryKey: ['categories'],
     queryFn: getCategories,
   })
-
-  const categories = fetchedCategories ? [...defaultCategories, ...fetchedCategories] : defaultCategories;
 
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(categoryFormSchema),
@@ -130,7 +115,7 @@ export function CategoryManagement() {
         <TabsContent value="list" className="space-y-4">
           {isLoading ? (
             <div>Loading categories...</div>
-          ) : categories?.length > 0 ? (
+          ) : categories && categories.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {categories.map((category) => (
                 <div
