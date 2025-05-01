@@ -29,6 +29,19 @@ import { MoreHorizontal } from 'lucide-react'
 import { EditCategoryDialog } from './edit-category-dialog'
 import type { Category } from '@/types'
 
+const defaultCategories: Category[] = [
+  { id: 'default-1', name: 'Food', color: '#FF6347', icon: '🍕' },
+  { id: 'default-2', name: 'Transportation', color: '#4682B4', icon: '🚗' },
+  { id: 'default-3', name: 'Shopping', color: '#32CD32', icon: '🛍️' },
+  { id: 'default-4', name: 'Entertainment', color: '#FFD700', icon: '🎮' },
+  { id: 'default-5', name: 'Health', color: '#BA55D3', icon: '🏥' },
+  { id: 'default-6', name: 'Housing', color: '#F08080', icon: '🏠' },
+  { id: 'default-7', name: 'Utilities', color: '#ADD8E6', icon: '💡' },
+  { id: 'default-8', name: 'Travel', color: '#20B2AA', icon: '✈️' },
+  { id: 'default-9', name: 'Education', color: '#778899', icon: '📚' },
+  { id: 'default-10', name: 'Miscellaneous', color: '#C0C0C0', icon: '📝' },
+];
+
 const categoryFormSchema = z.object({
   name: z.string().min(2, 'Category name must be at least 2 characters'),
   color: z.string().regex(/^#[0-9A-F]{6}$/i, 'Must be a valid hex color'),
@@ -47,10 +60,12 @@ export function CategoryManagement() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
 
-  const { data: categories, isLoading } = useQuery<Category[]>({
+  const { data: fetchedCategories, isLoading } = useQuery<Category[]>({
     queryKey: ['categories'],
     queryFn: getCategories,
   })
+
+  const categories = fetchedCategories ? [...defaultCategories, ...fetchedCategories] : defaultCategories;
 
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(categoryFormSchema),
@@ -115,7 +130,7 @@ export function CategoryManagement() {
         <TabsContent value="list" className="space-y-4">
           {isLoading ? (
             <div>Loading categories...</div>
-          ) : categories?.length ? (
+          ) : categories?.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {categories.map((category) => (
                 <div
@@ -125,18 +140,20 @@ export function CategoryManagement() {
                 >
                   <div className="text-2xl mb-2">{category.icon}</div>
                   <div className="font-medium text-center">{category.name}</div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0 mt-2">
-                        <span className="sr-only">Open menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(category)}>Edit</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(category.id)}>Delete</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  {!category.id.startsWith('default-') && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0 mt-2">
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEdit(category)}>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDelete(category.id)}>Delete</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
               ))}
             </div>

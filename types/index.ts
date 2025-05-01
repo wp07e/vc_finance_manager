@@ -12,8 +12,8 @@ export interface Category {
   name: string
   color: string
   icon: string
-  userId: string
-  createdAt: Date
+  userId?: string
+  createdAt?: Date
 }
 
 export interface Expense {

@@ -48,7 +48,7 @@ const expenseFormSchema = z.object({
 type ExpenseFormValues = z.infer<typeof expenseFormSchema>
 
 export function AddExpenseForm() {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false)
   const queryClient = useQueryClient()
 
   const form = useForm<ExpenseFormValues>({
@@ -78,7 +78,7 @@ export function AddExpenseForm() {
     onSuccess: () => {
       toast.success('Expense added successfully')
       form.reset()
-      setIsOpen(false)
+      setIsPopoverOpen(false)
       queryClient.invalidateQueries({ queryKey: ['expenses'] })
     },
     onError: (error) => {
@@ -165,30 +165,32 @@ export function AddExpenseForm() {
           render={({ field }) => (
             <FormItem className="flex flex-col">
               <FormLabel>Date</FormLabel>
-              <Popover>
+              <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
                 <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        'w-full pl-3 text-left font-normal',
-                        !field.value && 'text-muted-foreground'
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, 'PPP')
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'w-full pl-3 text-left font-normal',
+                      !field.value && 'text-muted-foreground'
+                    )}
+                    onClick={() => setIsPopoverOpen(prev => !prev)}
+                  >
+                    {field.value ? (
+                      format(field.value, 'PPP')
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
+                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                  </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={field.value}
-                    onSelect={field.onChange}
+                    onSelect={(date) => {
+                      field.onChange(date)
+                      setIsPopoverOpen(false)
+                    }}
                     disabled={(date) =>
                       date > new Date() || date < new Date('1900-01-01')
                     }
