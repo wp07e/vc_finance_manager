@@ -7,6 +7,15 @@ export interface ActionResponse<T = any> {
   }
 }
 
+export interface Category {
+  id: string
+  name: string
+  color: string
+  icon: string
+  userId: string
+  createdAt: Date
+}
+
 export interface Expense {
   id: string
   userId: string

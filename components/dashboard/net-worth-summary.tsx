@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { getExpenses } from "@/services/expenses";
+import { getCurrentExpenses } from "@/services/expenses";
 import { getBudgets } from "@/services/budgets";
 import { startOfMonth } from "date-fns";
 import { TrendingUpIcon, TrendingDownIcon } from "lucide-react";
@@ -11,8 +11,8 @@ import { cn, formatCurrency } from "@/lib/utils";
 
 export function NetWorthSummary() {
   const { data: expenses } = useQuery({
-    queryKey: ["expenses"],
-    queryFn: getExpenses,
+    queryKey: ["expenses", "current-month"],
+    queryFn: getCurrentExpenses,
   });
 
   const stats = useMemo(() => {
@@ -20,7 +20,7 @@ export function NetWorthSummary() {
 
     const currentMonth = startOfMonth(new Date());
 
-    const totalExpenses = expenses.reduce(
+    const totalMonthlyExpenses = expenses.reduce(
       (sum, expense) => sum + expense.amount,
       0,
     );
@@ -29,10 +29,10 @@ export function NetWorthSummary() {
     // For now, we'll use placeholder data
     const monthlyIncome = 5000; // Placeholder
     const assets = 25000; // Placeholder
-    const liabilities = totalExpenses;
+    const liabilities = totalMonthlyExpenses; // Using monthly expenses as a proxy for monthly liabilities
 
-    const netWorth = assets - liabilities;
-    const monthlyNetIncome = monthlyIncome - totalExpenses;
+    const netWorth = assets - liabilities; // This calculation is still simplified
+    const monthlyNetIncome = monthlyIncome - totalMonthlyExpenses;
 
     return {
       netWorth,

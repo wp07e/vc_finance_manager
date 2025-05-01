@@ -1,37 +1,34 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { getExpenses } from '@/services/expenses'
+import { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { getCurrentExpenses } from '@/services/expenses'
 import type { Expense } from '@/types'
 import { format } from 'date-fns'
+import { toast } from 'sonner'
 
 export function ExpenseSummary() {
-  const [totalExpenses, setTotalExpenses] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
+  const { data: expenses, isLoading, error } = useQuery({
+    queryKey: ['expenses', 'current-month'],
+    queryFn: getCurrentExpenses,
+  })
 
-  useEffect(() => {
-    async function fetchExpenses() {
-      try {
-        const expenses = await getExpenses()
-        const total = expenses.reduce((sum, expense) => sum + expense.amount, 0)
-        setTotalExpenses(total)
-      } catch (error) {
-        console.error('Error fetching expenses:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
+  const totalMonthlyExpenses = useMemo(() => {
+    if (!expenses) return 0
+    return expenses.reduce((sum, expense) => sum + expense.amount, 0)
+  }, [expenses])
 
-    fetchExpenses()
-  }, [])
-
-  if (isLoading) return <div>Loading...</div>
+  if (isLoading) return <div>Loading expenses...</div>
+  if (error) {
+    toast.error('Failed to load monthly expenses: ' + error.message)
+    return <div>Error loading expenses</div>
+  }
 
   return (
     <div className="space-y-2">
       <h3 className="font-medium">Monthly Expenses</h3>
       <p className="text-2xl font-bold">
-        ${totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+        ${totalMonthlyExpenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}
       </p>
       <p className="text-sm text-muted-foreground">
         For {format(new Date(), 'MMMM yyyy')}

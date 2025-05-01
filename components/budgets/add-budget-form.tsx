@@ -23,7 +23,9 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { createBudget } from '@/services/budgets'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
+import { getCategories } from '@/services/categories'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const budgetFormSchema = z.object({
   category: z.string().min(1, 'Please select a category'),
@@ -35,19 +37,6 @@ const budgetFormSchema = z.object({
 
 type BudgetFormValues = z.infer<typeof budgetFormSchema>
 
-const categories = [
-  'Food & Dining',
-  'Transportation',
-  'Shopping',
-  'Entertainment',
-  'Health',
-  'Housing',
-  'Utilities',
-  'Travel',
-  'Education',
-  'Other',
-] as const
-
 export function AddBudgetForm() {
   const queryClient = useQueryClient()
 
@@ -58,6 +47,11 @@ export function AddBudgetForm() {
       amount: '',
       period: 'monthly',
     },
+  })
+
+  const { data: categories, isLoading: isLoadingCategories, error: categoriesError } = useQuery({
+    queryKey: ['categories'],
+    queryFn: getCategories,
   })
 
   const { mutate: addBudget, isPending } = useMutation({
@@ -92,20 +86,28 @@ export function AddBudgetForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Category</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isLoadingCategories && <Skeleton className="h-10 w-full" />}
+              {categoriesError && (
+                <p className="text-sm font-medium text-destructive">
+                  Failed to load categories.
+                </p>
+              )}
+              {categories && (
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.name}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <FormMessage />
             </FormItem>
           )}

@@ -8,6 +8,7 @@ import { format } from 'date-fns'
 import { CalendarIcon } from '@radix-ui/react-icons'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Calendar } from '@/components/ui/calendar'
 import {
   Form,
@@ -32,7 +33,8 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { createExpense } from '@/services/expenses'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { getCategories } from '@/services/categories'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 const expenseFormSchema = z.object({
   amount: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
@@ -44,19 +46,6 @@ const expenseFormSchema = z.object({
 })
 
 type ExpenseFormValues = z.infer<typeof expenseFormSchema>
-
-const categories = [
-  'Food & Dining',
-  'Transportation',
-  'Shopping',
-  'Entertainment',
-  'Health',
-  'Housing',
-  'Utilities',
-  'Travel',
-  'Education',
-  'Other',
-] as const
 
 export function AddExpenseForm() {
   const [isOpen, setIsOpen] = useState(false)
@@ -70,6 +59,11 @@ export function AddExpenseForm() {
       description: '',
       date: new Date(),
     },
+  })
+
+  const { data: categories, isLoading: isLoadingCategories, error: categoriesError } = useQuery({
+    queryKey: ['categories'],
+    queryFn: getCategories,
   })
 
   const { mutate: addExpense, isPending } = useMutation({
@@ -124,20 +118,28 @@ export function AddExpenseForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Category</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isLoadingCategories && <Skeleton className="h-10 w-full" />}
+              {categoriesError && (
+                <p className="text-sm font-medium text-destructive">
+                  Failed to load categories.
+                </p>
+              )}
+              {categories && (
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.name}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <FormMessage />
             </FormItem>
           )}

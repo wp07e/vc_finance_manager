@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
-import { getExpenses } from "@/services/expenses";
+import { getCurrentExpenses } from "@/services/expenses";
 import { startOfMonth } from "date-fns";
 import { DonutChart } from "@tremor/react";
 
@@ -14,20 +14,14 @@ export function CategoryBreakdown() {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["expenses"],
-    queryFn: getExpenses,
+    queryKey: ["expenses", "current-month"],
+    queryFn: getCurrentExpenses,
   });
 
   const chartData = useMemo(() => {
     if (!expenses) return [];
 
-    const currentMonth = startOfMonth(new Date());
-    const monthlyExpenses = expenses.filter(
-      (expense) =>
-        startOfMonth(expense.date).getTime() === currentMonth.getTime(),
-    );
-
-    const categoryTotals = monthlyExpenses.reduce(
+    const categoryTotals = expenses.reduce(
       (acc, expense) => {
         acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
         return acc;

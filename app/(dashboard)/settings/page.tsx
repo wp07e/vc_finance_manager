@@ -36,6 +36,7 @@ import {
 import { updateUserSettings, getUserSettings } from "@/services/user";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
+import { CategoryManagement } from "@/components/categories/category-management";
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
@@ -230,6 +231,10 @@ export default function SettingsPage() {
           </div>
         </form>
       </Form>
+
+      <Separator />
+
+      <CategoryManagement />
     </div>
   );
 }

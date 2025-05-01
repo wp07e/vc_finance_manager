@@ -17,8 +17,17 @@ import {
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { createCategory, getCategories } from '@/services/categories'
+import { createCategory, getCategories, deleteCategory } from '@/services/categories'
 import { toast } from 'sonner'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { MoreHorizontal } from 'lucide-react'
+import { EditCategoryDialog } from './edit-category-dialog'
+import type { Category } from '@/types'
 
 const categoryFormSchema = z.object({
   name: z.string().min(2, 'Category name must be at least 2 characters'),
@@ -35,8 +44,10 @@ const iconOptions = [
 export function CategoryManagement() {
   const [selectedIcon, setSelectedIcon] = useState<string>(iconOptions[0])
   const queryClient = useQueryClient()
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
 
-  const { data: categories, isLoading } = useQuery({
+  const { data: categories, isLoading } = useQuery<Category[]>({
     queryKey: ['categories'],
     queryFn: getCategories,
   })
@@ -50,7 +61,7 @@ export function CategoryManagement() {
     },
   })
 
-  const { mutate: addCategory, isPending } = useMutation({
+  const { mutate: addCategory, isPending: isCreating } = useMutation({
     mutationFn: createCategory,
     onSuccess: () => {
       toast.success('Category created successfully')
@@ -62,12 +73,35 @@ export function CategoryManagement() {
     },
   })
 
+  const { mutate: removeCategory, isPending: isDeleting } = useMutation({
+    mutationFn: deleteCategory,
+    onSuccess: () => {
+      toast.success('Category deleted successfully')
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      // Also invalidate expenses and budgets queries as category names might be displayed there
+      queryClient.invalidateQueries({ queryKey: ['expenses'] })
+      queryClient.invalidateQueries({ queryKey: ['budgets'] })
+    },
+    onError: (error) => {
+      toast.error('Failed to delete category: ' + error.message)
+    },
+  })
+
   function onSubmit(values: CategoryFormValues) {
     addCategory({
       name: values.name,
       color: values.color,
       icon: selectedIcon,
     })
+  }
+
+  function handleDelete(categoryId: string) {
+    removeCategory(categoryId)
+  }
+
+  function handleEdit(category: Category) {
+    setSelectedCategory(category)
+    setIsEditDialogOpen(true)
   }
 
   return (
@@ -86,11 +120,23 @@ export function CategoryManagement() {
               {categories.map((category) => (
                 <div
                   key={category.id}
-                  className="p-4 rounded-lg border"
+                  className="p-4 rounded-lg border flex flex-col items-center"
                   style={{ borderColor: category.color }}
                 >
                   <div className="text-2xl mb-2">{category.icon}</div>
-                  <div className="font-medium">{category.name}</div>
+                  <div className="font-medium text-center">{category.name}</div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0 mt-2">
+                        <span className="sr-only">Open menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEdit(category)}>Edit</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDelete(category.id)}>Delete</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               ))}
             </div>
@@ -165,13 +211,20 @@ export function CategoryManagement() {
                 )}
               />
 
-              <Button type="submit" className="w-full" disabled={isPending}>
-                {isPending ? 'Creating category...' : 'Create Category'}
+              <Button type="submit" className="w-full" disabled={isCreating}>
+                {isCreating ? 'Creating category...' : 'Create Category'}
               </Button>
             </form>
           </Form>
         </TabsContent>
       </Tabs>
+      {selectedCategory && (
+        <EditCategoryDialog
+          category={selectedCategory}
+          isOpen={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+        />
+      )}
     </Card>
   )
 }

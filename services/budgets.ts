@@ -8,6 +8,9 @@ import {
   Timestamp,
   addDoc,
   FirestoreError,
+  doc,
+  updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
@@ -151,41 +154,62 @@ export async function createBudget({
   }
 }
 
-export async function getCurrentMonthBudgets(): Promise<Budget[]> {
+interface UpdateBudgetInput {
+  id: string;
+  category?: string;
+  amount?: number;
+  period?: "weekly" | "monthly";
+  startDate?: Date;
+}
+
+export async function updateBudget({
+  id,
+  category,
+  amount,
+  period,
+  startDate,
+}: UpdateBudgetInput) {
   const auth = getAuth();
   const user = auth.currentUser;
-
   if (!user) {
     throw new BudgetServiceError(
-      "You must be logged in to fetch budgets",
+      "You must be logged in to update a budget",
       "UNAUTHENTICATED",
     );
   }
 
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
+  try {
+    const budgetRef = doc(db, "budgets", id);
+    const updateData: any = {};
+    if (category !== undefined) updateData.category = category;
+    if (amount !== undefined) updateData.amount = amount;
+    if (period !== undefined) updateData.period = period;
+    if (startDate !== undefined)
+      updateData.startDate = Timestamp.fromDate(startDate);
+
+    await updateDoc(budgetRef, updateData);
+
+    return { success: true, id };
+  } catch (error) {
+    handleFirebaseError(error);
+  }
+}
+
+export async function deleteBudget(id: string) {
+  const auth = getAuth();
+  const user = auth.currentUser;
+  if (!user) {
+    throw new BudgetServiceError(
+      "You must be logged in to delete a budget",
+      "UNAUTHENTICATED",
+    );
+  }
 
   try {
-    const budgetsRef = collection(db, "budgets");
-    const q = query(
-      budgetsRef,
-      where("userId", "==", user.uid),
-      where("startDate", ">=", Timestamp.fromDate(startOfMonth)),
-    );
+    const budgetRef = doc(db, "budgets", id);
+    await deleteDoc(budgetRef);
 
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        userId: data.userId,
-        category: data.category,
-        amount: data.amount,
-        period: data.period,
-        startDate: data.startDate.toDate(),
-      };
-    });
+    return { success: true, id };
   } catch (error) {
     handleFirebaseError(error);
   }
