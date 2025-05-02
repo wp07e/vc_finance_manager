@@ -15,6 +15,8 @@ import { AddInvestmentDialog } from '@/components/investments/add-investment-dia
 import { FinancialInsights } from '@/components/analytics/financial-insights'
 import { WeeklyAnalytics } from '@/components/analytics/weekly-analytics'
 import { CategoryExpenseReport } from '@/components/analytics/category-expense-report'
+import { SavingsGoalsSummary } from '@/components/dashboard/savings-goals-summary'
+import { InvestmentGoalsSummary } from '@/components/dashboard/investment-goals-summary'
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { Separator } from '@/components/ui/separator'
@@ -68,6 +70,18 @@ export default function DashboardPage() {
         <Suspense fallback={<LoadingCard />}>
           <Card className="p-6">
             <ExpenseSummary />
+          </Card>
+        </Suspense>
+
+        <Suspense fallback={<LoadingCard />}>
+          <Card className="p-6">
+            <SavingsGoalsSummary />
+          </Card>
+        </Suspense>
+
+        <Suspense fallback={<LoadingCard />}>
+          <Card className="p-6">
+            <InvestmentGoalsSummary />
           </Card>
         </Suspense>
 

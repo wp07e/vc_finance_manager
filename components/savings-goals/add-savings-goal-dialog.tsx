@@ -21,9 +21,7 @@ function AddSavingsGoalDialog() {
 
   const handleAddSavingsGoal = async (values: SavingsGoalInput) => {
     try {
-      // TODO: Get the actual userId
-      const userId = 'placeholder-user-id'
-      await addSavingsGoal({ ...values, userId, currentAmount: 0 })
+      await addSavingsGoal({ ...values, currentAmount: 0 })
       toast.success('Savings goal added successfully!')
       setIsOpen(false)
     } catch (error) {
