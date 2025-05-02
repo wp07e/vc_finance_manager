@@ -1,10 +1,11 @@
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import type { UserSettings } from "@/types";
+import { UserSettingsInput } from "@/lib/validations/schema";
 
 const db = getFirestore();
 
-export async function getUserSettings(): Promise<UserSettings> {
+export async function getUserSettings(): Promise<UserSettingsInput> {
   const auth = getAuth();
   const user = auth.currentUser;
 
@@ -25,6 +26,8 @@ export async function getUserSettings(): Promise<UserSettings> {
           email: false,
           push: false,
         },
+        displayName: undefined,
+        photoURL: undefined,
       };
     }
 
@@ -36,6 +39,8 @@ export async function getUserSettings(): Promise<UserSettings> {
         email: data.settings?.notifications?.email || false,
         push: data.settings?.notifications?.push || false,
       },
+      displayName: data.displayName,
+      photoURL: data.photoURL,
     };
   } catch (error) {
     console.error("Error fetching user settings:", error);
@@ -44,7 +49,7 @@ export async function getUserSettings(): Promise<UserSettings> {
 }
 
 export async function updateUserSettings(
-  settings: UserSettings,
+  settings: UserSettingsInput,
 ): Promise<void> {
   const auth = getAuth();
   const user = auth.currentUser;
@@ -54,15 +59,24 @@ export async function updateUserSettings(
   }
 
   try {
-    const updateData: {
-      settings: UserSettings;
-      updatedAt: Date;
-    } = {
-      settings,
+    const updateData: any = {
+      settings: {
+        theme: settings.theme,
+        currency: settings.currency,
+        notifications: settings.notifications,
+      },
       updatedAt: new Date(),
     };
+
+    if (settings.displayName !== undefined) {
+      updateData.displayName = settings.displayName;
+    }
+    if (settings.photoURL !== undefined) {
+      updateData.photoURL = settings.photoURL;
+    }
+
     const userRef = doc(db, "users", user.uid);
-    await setDoc(userRef, updateData);
+    await setDoc(userRef, updateData, { merge: true }); // Use merge to avoid overwriting other user fields
   } catch (error) {
     console.error("Error updating user settings:", error);
     throw new Error("Failed to update user settings");

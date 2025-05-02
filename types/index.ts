@@ -52,3 +52,21 @@ export interface UserSettings {
     push: boolean
   }
 }
+
+export interface SavingsGoal {
+  id: string
+  userId: string
+  name: string
+  targetAmount: number
+  currentAmount: number
+  deadline: string // Consider using Date type if storing as timestamp in Firebase
+}
+
+export interface Investment {
+  id: string
+  userId: string
+  name: string
+  type: 'stock' | 'crypto' | 'mutual fund'
+  quantity: number
+  purchasePrice: number
+}
