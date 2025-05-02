@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/auth-provider'
 import { NavigationHeader } from '@/components/navigation-header'
+import { NotificationsList } from '@/components/notifications/notifications-list'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function DashboardLayout({
@@ -38,6 +39,10 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen">
       <NavigationHeader />
+      {/* Add NotificationsList component */}
+      <div className="flex justify-end p-4">
+        <NotificationsList />
+      </div>
       <div className="container mx-auto sm:p-6 p-4">{children}</div>
     </div>
   )

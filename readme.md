@@ -122,7 +122,7 @@ see .rules
 | Phase | Focus | Timeline | Major Deliverables |
 |:-----:|:----- |:--------:|:------------------ |
 | Phase 1 | MVP (Core Platform) | 3-4 months | - Basic website setup<br> - User accounts<br> - Expense tracking<br> - Budget creation<br> - Dashboard overview<br> - Responsive design |
-| Phase 2 | Advanced Core + Polish | 2-3 months | - Savings goals<br> - Investment tracking (manual)<br> - Reports and analytics<br> - Notifications system<br> - Settings page<br> - Social login (Google, Apple) |
+| Phase 2 | Advanced Core + Polish | 2-3 months | - Savings goals<br> - Investment tracking (manual)<br> - Reports and analytics<br> - Notifications system<br> - Settings page<br> - Social login (Google) |
 | Phase 3 | API Integrations & AI Insights | 4-5 months | - Bank account integration via Plaid API<br> - Auto-expense imports<br> - AI smart budgeting suggestions<br> - Live stock/crypto price pulling |
 | Phase 4 | Premium & Community Features | 3 months | - Premium membership (Stripe payment integration)<br> - User forums or group discussions<br> - Personalized financial advice features |
 

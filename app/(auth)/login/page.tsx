@@ -30,7 +30,6 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [isSocialLoading, setIsSocialLoading] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -119,7 +118,7 @@ export default function LoginPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-4">
-          <Button variant="outline" onClick={handleGoogleLogin} disabled={isSocialLoading}>
+          <Button variant="outline" onClick={handleGoogleLogin} disabled={isLoading}>
             {/* TODO: Add Google icon */}
             Google
           </Button>
@@ -144,7 +143,7 @@ export default function LoginPage() {
   );
 
   async function handleGoogleLogin() {
-    setIsSocialLoading(true);
+    setIsLoading(true); // Use isLoading for social login as well
     try {
       const auth = getAuth();
       const provider = new GoogleAuthProvider();
@@ -153,7 +152,7 @@ export default function LoginPage() {
     } catch (error: any) {
       toast.error("Failed to sign in with Google. Please try again.");
     } finally {
-      setIsSocialLoading(false);
+      setIsLoading(false);
     }
   }
 }
